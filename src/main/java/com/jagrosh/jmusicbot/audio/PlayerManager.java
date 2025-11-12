@@ -29,6 +29,7 @@ import com.sedmelluq.discord.lavaplayer.source.nico.NicoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
+import com.jagrosh.jmusicbot.audio.BilibiliAudioSourceManager;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import net.dv8tion.jda.api.entities.Guild;
 
@@ -60,6 +61,11 @@ public class PlayerManager extends DefaultAudioPlayerManager
         registerSourceManager(new BeamAudioSourceManager());
         registerSourceManager(new GetyarnAudioSourceManager());
         registerSourceManager(new NicoAudioSourceManager());
+        registerSourceManager(new BilibiliAudioSourceManager(
+                bot.getConfig().getBilibiliSESSDATA(),
+                bot.getConfig().getBilibiliJct(),
+                bot.getConfig().getBilibiliDedeUserID()
+        ));
         registerSourceManager(new HttpAudioSourceManager(MediaContainerRegistry.DEFAULT_REGISTRY));
 
         AudioSourceManagers.registerLocalSource(this);

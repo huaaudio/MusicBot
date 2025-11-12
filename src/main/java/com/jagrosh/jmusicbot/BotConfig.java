@@ -42,6 +42,8 @@ public class BotConfig
     private String token, prefix, altprefix, helpWord, playlistsFolder, logLevel,
             successEmoji, warningEmoji, errorEmoji, loadingEmoji, searchingEmoji,
             evalEngine;
+    // Optional Bilibili cookies (if user adds to config)
+    private String bilibiliSESSDATA, bilibiliJct, bilibiliDedeUserID;
     private boolean stayInChannel, songInGame, npImages, updatealerts, useEval, dbots;
     private long owner, maxSeconds, aloneTimeUntilStop;
     private int maxYTPlaylistPages;
@@ -99,6 +101,12 @@ public class BotConfig
             transforms = config.getConfig("transforms");
             skipratio = config.getDouble("skipratio");
             dbots = owner == 113156185389092864L;
+
+            // Optional: read Bilibili cookies if provided by the user either as top-level keys
+            // SESSDATA, bili_jct, DedeUserID or under a bilibili section.
+            try { bilibiliSESSDATA = config.hasPath("SESSDATA") ? config.getString("SESSDATA") : (config.hasPath("bilibili.SESSDATA") ? config.getString("bilibili.SESSDATA") : (config.hasPath("bilibili.sessdata") ? config.getString("bilibili.sessdata") : null)); } catch (ConfigException.Missing ignored) { bilibiliSESSDATA = null; }
+            try { bilibiliJct = config.hasPath("bili_jct") ? config.getString("bili_jct") : (config.hasPath("bilibili.bili_jct") ? config.getString("bilibili.bili_jct") : null); } catch (ConfigException.Missing ignored) { bilibiliJct = null; }
+            try { bilibiliDedeUserID = config.hasPath("DedeUserID") ? config.getString("DedeUserID") : (config.hasPath("bilibili.DedeUserID") ? config.getString("bilibili.DedeUserID") : (config.hasPath("bilibili.dedeuserid") ? config.getString("bilibili.dedeuserid") : null)); } catch (ConfigException.Missing ignored) { bilibiliDedeUserID = null; }
             
             // we may need to write a new config file
             boolean write = false;
@@ -380,5 +388,19 @@ public class BotConfig
     public Config getTransforms()
     {
         return transforms;
+    }
+    
+    // --- Bilibili cookies getters ---
+    public String getBilibiliSESSDATA()
+    {
+        return bilibiliSESSDATA;
+    }
+    public String getBilibiliJct()
+    {
+        return bilibiliJct;
+    }
+    public String getBilibiliDedeUserID()
+    {
+        return bilibiliDedeUserID;
     }
 }
