@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
@@ -25,6 +26,7 @@ import org.jsoup.nodes.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -151,7 +153,7 @@ public class BilibiliAudioSourceManager implements AudioSourceManager, HttpConfi
         // 构建 Cookie 字符串
         StringBuilder cookie = new StringBuilder();
         boolean hasCookie = false;
-        
+
         if (cookieSESSDATA != null && !cookieSESSDATA.isEmpty()) {
             cookie.append("SESSDATA=").append(cookieSESSDATA);
             hasCookie = true;
@@ -166,17 +168,28 @@ public class BilibiliAudioSourceManager implements AudioSourceManager, HttpConfi
             cookie.append("DedeUserID=").append(cookieDedeUserID);
             hasCookie = true;
         }
-        
+
         if (hasCookie) {
             request.setHeader("Cookie", cookie.toString());
             log.debug("Using authenticated request with cookies");
         } else {
             log.info("No cookies provided, attempting anonymous access (may have limited quality or fail for restricted videos)");
-            // 匿名访问时添加一些基础 Cookie 以模拟普通浏览器
-            request.setHeader("Cookie", "buvid3=generated-buvid3; b_nut=" + System.currentTimeMillis());
+            // For anonymous access, we need to get a valid buvid3 cookie first to bypass anti-bot measures (HTTP 412).
+            try (CloseableHttpResponse response = httpInterface.execute(new HttpGet("https://www.bilibili.com"))) {
+                // The buvid3 cookie is set on the first visit. We don't need the response body.
+                // The cookie is stored in the HttpClient's cookie store and will be used for subsequent requests.
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (!HttpClientTools.isSuccessWithContent(statusCode)) {
+                    log.warn("Failed to fetch initial Bilibili page to get cookies, status code: {}", statusCode);
+                }
+            } catch (Exception e) {
+                log.warn("Error when trying to get initial Bilibili cookies, continuing without them.", e);
+            }
         }
 
-        try (CloseableHttpResponse response = httpInterface.execute(request)) {
+        // Now, perform the request to the video page.
+        request = new HttpGet(url);
+        try (CloseableHttpResponse response = httpInterface.execute(request)) { // The cookies from the previous request are automatically used.
             int statusCode = response.getStatusLine().getStatusCode();
             if (!HttpClientTools.isSuccessWithContent(statusCode)) {
                 throw new IOException("Unexpected status code from Bilibili video page: " + statusCode);
